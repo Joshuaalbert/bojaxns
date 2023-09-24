@@ -94,8 +94,8 @@ class GaussianProcessConditionalPredictive(ConditionalPredictive):
         no_uncert_data = jnp.isnan(self._data.Y_var)
 
         variance = jnp.where(no_uncert_data,
-                             self._variance + self._variance / jnp.sqrt(self._data.sample_size),
-                             self._data.Y_var + self._variance / jnp.sqrt(self._data.sample_size))
+                             self._variance + self._variance / self._data.sample_size,
+                             self._data.Y_var + self._variance / self._data.sample_size)
 
         sigma = jnp.sqrt(jnp.maximum(1e-6, variance))
         return log_normal_with_mask(x=self._data.Y, mean=self._mean, cov=Kxx, sigma=sigma)
@@ -106,8 +106,8 @@ class GaussianProcessConditionalPredictive(ConditionalPredictive):
         no_uncert_data = jnp.isnan(self._data.Y_var)
 
         variance = jnp.where(no_uncert_data,
-                             self._variance + self._variance / jnp.sqrt(self._data.sample_size),
-                             self._data.Y_var + self._variance / jnp.sqrt(self._data.sample_size))
+                             self._variance + self._variance / self._data.sample_size,
+                             self._data.Y_var + self._variance / self._data.sample_size)
 
         data_cov = jnp.diag(variance)
         return log_normal(self._data.Y, self._mean, Kxx + data_cov)
@@ -123,8 +123,8 @@ class GaussianProcessConditionalPredictive(ConditionalPredictive):
         no_uncert_data = jnp.isnan(self._data.Y_var)
 
         variance = jnp.where(no_uncert_data,
-                             self._variance + self._variance / jnp.sqrt(self._data.sample_size),
-                             self._data.Y_var + self._variance / jnp.sqrt(self._data.sample_size))
+                             self._variance + self._variance / self._data.sample_size,
+                             self._data.Y_var + self._variance / self._data.sample_size)
         std_dev = jnp.sqrt(jnp.maximum(1e-6, variance))
 
         L = jnp.linalg.cholesky(Kxx / (std_dev[:, None] * std_dev[None, :]) + jnp.eye(std_dev.size))
@@ -148,8 +148,8 @@ class GaussianProcessConditionalPredictive(ConditionalPredictive):
         no_uncert_data = jnp.isnan(self._data.Y_var)
 
         variance = jnp.where(no_uncert_data,
-                             self._variance + self._variance / jnp.sqrt(self._data.sample_size),
-                             self._data.Y_var + self._variance / jnp.sqrt(self._data.sample_size))
+                             self._variance + self._variance / self._data.sample_size,
+                             self._data.Y_var + self._variance / self._data.sample_size)
 
         data_cov = jnp.diag(variance)
 
