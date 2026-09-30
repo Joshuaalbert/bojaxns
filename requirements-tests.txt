@@ -1,1 +1,2 @@
-pytest
+# Compatibility entry point; install the maintained test extra.
+.[tests]

@@ -1,42 +1,78 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
 name: Python package
 
 on:
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: ["main", "develop"]
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  reviewer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install structural-check and build tools
+        run: python -m pip install pytest flake8 ruff build twine
+      - name: Fatal lint
+        run: |
+          flake8 src cicd --count --select E9,F63,F7,F82 --show-source --statistics
+          ruff check src cicd
+      - name: Reviewer autochecks
+        run: python -m pytest cicd/reviewer_autochecks
+      - name: Build distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+      - name: Pre-release autochecks
+        if: >-
+          github.event_name == 'push' ||
+          (github.base_ref == 'main' && github.head_ref == 'develop')
+        run: python cicd/pre_release_autochecks/check_all_invariants_covered.py
 
+  tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11" ]
-
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    env:
+      MPLBACKEND: Agg
+      JAX_PLATFORMS: cpu
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install the package and test extras
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8 pytest
-          pip install -r requirements.txt
-          pip install -r requirements-tests.txt
-          pip install .
-      - name: Lint with flake8
+          python -m pip install '.[tests]'
+          python -m pip check
+      - name: Verify wheel outside checkout
+        if: matrix.python-version == '3.14'
+        shell: bash
         run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Test with pytest
-        run: |
-          pytest
+          set -euo pipefail
+          artifact_dir="$(mktemp -d)"
+          wheel_target="$(mktemp -d)"
+          python -m build --outdir "$artifact_dir"
+          python -m twine check "$artifact_dir"/*
+          python -m pip install --no-deps --target "$wheel_target" "$artifact_dir"/*.whl
+          cd "$RUNNER_TEMP"
+          PYTHONPATH="$wheel_target" python -c 'import os; from pathlib import Path; import bojaxns; from bojaxns import BayesianOptimisation, ParameterSpace; assert Path(bojaxns.__file__).resolve().is_relative_to(Path(os.environ["PYTHONPATH"]).resolve())'
+      - name: Unit tests
+        run: python -m pytest cicd/tests
+      - name: System tests
+        if: >-
+          matrix.python-version == '3.14' &&
+          (github.event_name == 'push' ||
+          (github.base_ref == 'main' && github.head_ref == 'develop'))
+        run: python -m pytest cicd/system_tests

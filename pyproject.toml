@@ -1,6 +1,63 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "bojaxns"
+version = "1.1.1"
+description = "Bayesian Optimisation with JAXNS"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Joshua G. Albert", email = "albert@strw.leidenuniv.nl" }]
+keywords = ["bayesian-optimisation", "jax", "gaussian-process", "nested-sampling"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "jax",
+    "jaxlib",
+    "tfp-nightly==0.26.0.dev20260930",
+    "jaxns==3.0.0",
+    "jaxctx>=1.2.0",
+    "chex>=0.0.8",
+    "mctx",
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[project.urls]
+Homepage = "https://github.com/JoshuaAlbert/bojaxns"
+Documentation = "https://bojaxns.readthedocs.io/"
+Issues = "https://github.com/JoshuaAlbert/bojaxns/issues"
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=7",
+    "flake8",
+    "ruff",
+    "build",
+    "twine",
+    "tomli; python_version < '3.11'",
+]
+docs = ["sphinx", "sphinx_rtd_theme", "sphinx-autoapi", "nbsphinx"]
+visualisation = ["pygraphviz>=1.7"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["bojaxns*"]
+
+# Legacy numerical modules retain their existing style. These are fatal checks,
+# not a blanket reformat bundled into a packaging migration.
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]

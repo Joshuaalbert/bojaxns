@@ -1,0 +1,55 @@
+{
+  "Parameter names within one parameter space are unique.": [
+    "test_parameter_space"
+  ],
+  "Supported parameter prior schemas preserve their values through JSON serialization.": [
+    "test_serialisation"
+  ],
+  "Prior transforms produce values inside the declared continuous, integer and categorical domains.": [
+    "test_build_prior",
+    "test_decision_variable",
+    "test_close_to_zero",
+    "test_flat_adapter_preserves_declared_order_and_native_physical_values",
+    "test_uniform_infinite_uncertainty_and_singleton_categories"
+  ],
+  "Supported parameter values can be mapped to unit-cube coordinates and transformed back to the same values.": [
+    "test_sample_U_value",
+    "test_nonzero_integer_and_mixed_inverse_roundtrip"
+  ],
+  "Experiment JSON round trips preserve trials and measurements, and trial parameter names must match the experiment parameter space.": [
+    "test_optimisation_experiment",
+    "test_native_pytree_json_roundtrip_and_explicit_validation",
+    "test_schema_validation_rechecks_mutable_experiment"
+  ],
+  "For finite observation variances, masked and unmasked GP calculations agree numerically.": [
+    "test_gaussian_conditional_predictive_no_infs"
+  ],
+  "Masking the tested observation subsets with infinite variance leaves finite GP likelihoods and predictions.": [
+    "test_gaussian_conditional_predictive_some_infs",
+    "test_gaussian_conditional_predictive_lots_of_infs"
+  ],
+  "Latin hypercube designs place one sample in each stratum along every dimension.": [
+    "test_latin_hyper_cube"
+  ],
+  "Predictive mixture covariance includes both conditional covariance and covariance of conditional means.": [
+    "test_mixture_total_covariance",
+    "test_mixture_training_posterior_total_variance"
+  ],
+  "Masked observations do not determine GP empirical prior scales or the expected-improvement incumbent.": [
+    "test_masked_padding_does_not_change_expected_improvement_incumbent",
+    "test_masked_observation_does_not_set_empirical_prior_scales"
+  ],
+  "Terminal lookahead states have zero continuation value and leave their observation data unchanged.": [
+    "test_lookahead_terminal_has_no_bootstrap_or_out_of_bounds_write"
+  ],
+  "Latin hypercube sampling is reproducible for a supplied seed without mutating NumPy global random state.": [
+    "test_latin_hypercube_is_seeded_stratified_and_rng_isolated"
+  ],
+  "Acquisition search returns the requested candidate count and the same optimum with or without retained history.": [
+    "test_search_remainder_and_optional_history"
+  ],
+  "Experiments with fewer than two distinct usable trial means continue random exploration.": [
+    "test_one_trial_and_flat_objective_continue_exploring",
+    "test_failed_measurement_penalties_use_same_warmup_and_fit_data"
+  ]
+}
