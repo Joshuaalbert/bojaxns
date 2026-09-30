@@ -60,7 +60,7 @@ autodoc_typehints = "description"
 
 # -- Options for AutoAPI -----------------------------------------------------
 
-autoapi_dirs = ["../bojaxns"]
+autoapi_dirs = ["../src/bojaxns"]
 autoapi_root = "api"  # where to put the generated files relative to root
 autoapi_options =  ["members", "undoc-members", "show-inheritance", 
                     "special-members", "imported-members"]

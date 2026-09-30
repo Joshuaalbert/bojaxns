@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "tests": {
+    "test_broadcast_lengthscale": {
+      "path": "cicd/tests/gaussian_process_formulation/test_distribution_maths.py",
+      "reason": "dependency_smoke",
+      "note": "Legacy TFP feature-transformed kernel construction smoke; not an asserted scientific invariant."
+    },
+    "test_search_rejects_invalid_budgets": {
+      "path": "cicd/tests/test_service_migration.py",
+      "reason": "migration_regression",
+      "note": "Checks search rejects invalid budgets; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_multistep_search_does_not_render_by_default": {
+      "path": "cicd/tests/test_service_migration.py",
+      "reason": "migration_regression",
+      "note": "Checks multistep search does not render by default; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_prior_and_scalar_validation": {
+      "path": "cicd/tests/test_schema_migration.py",
+      "reason": "migration_regression",
+      "note": "Checks prior and scalar validation; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_nonfinite_measurements_preserve_optimizer_penalty_contract": {
+      "path": "cicd/tests/test_schema_migration.py",
+      "reason": "migration_regression",
+      "note": "Checks nonfinite measurements preserve optimizer penalty contract; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_impossible_inverse_fails_and_rare_category_has_finite_direct_sample": {
+      "path": "cicd/tests/test_parameter_migration.py",
+      "reason": "migration_regression",
+      "note": "Checks impossible inverse fails and rare category has finite direct sample; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_gp_v3_model_uses_runtime_data_and_constant_coordinate_domain": {
+      "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
+      "reason": "migration_regression",
+      "note": "Checks gp v3 model uses runtime data and constant coordinate domain; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_flat_objective_rejected_at_prior_boundary": {
+      "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
+      "reason": "migration_regression",
+      "note": "Checks flat objective rejected at prior boundary; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_nonfinite_empirical_prior_scale_rejected": {
+      "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
+      "reason": "boundary_validation",
+      "note": "Finite inputs whose empirical scale overflows must fail before constructing invalid GP priors."
+    },
+    "test_observation_variance_semantics_match_dense_conditioning": {
+      "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
+      "reason": "migration_regression",
+      "note": "Checks observation variance semantics match dense conditioning; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_gp_prior_requires_two_unmasked_observations": {
+      "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
+      "reason": "migration_regression",
+      "note": "Checks gp prior requires two unmasked observations; migration/API regression rather than a broader scientific invariant."
+    },
+    "test_flat_precision_and_native_model_dtype_are_separate_contracts": {
+      "path": "cicd/tests/test_parameter_migration.py",
+      "reason": "precision_compatibility",
+      "note": "Flat persisted coordinates retain float64 precision while the released native JAXNS model uses its own U dtype."
+    },
+    "test_diagonal_prediction_matches_full_covariance_under_jit": {
+      "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
+      "reason": "numerical_equivalence",
+      "note": "Compiler-memory improvement for diagonal prediction agrees with full covariance under JIT, with and without masked observations."
+    }
+  }
+}

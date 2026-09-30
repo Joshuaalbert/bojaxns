@@ -1,0 +1,284 @@
+{
+  "title": "OptimisationExperiment",
+  "type": "object",
+  "properties": {
+    "parameter_space": {
+      "title": "ParameterSpace",
+      "type": "object",
+      "properties": {
+        "parameters": {
+          "type": "array",
+          "items": {
+            "title": "Parameter",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "price"
+              },
+              "prior": {
+                "anyOf": [
+                  {
+                    "title": "ContinuousPrior",
+                    "type": "object",
+                    "properties": {
+                      "lower": {
+                        "type": "number",
+                        "example": 0.1
+                      },
+                      "upper": {
+                        "type": "number",
+                        "example": 5.5
+                      },
+                      "mode": {
+                        "type": "number",
+                        "example": 2.5
+                      },
+                      "uncert": {
+                        "type": "number",
+                        "example": 2.0,
+                        "exclusiveMinimum": 0
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "continuous_prior"
+                        ],
+                        "default": "continuous_prior"
+                      }
+                    },
+                    "required": [
+                      "lower",
+                      "upper",
+                      "mode",
+                      "uncert"
+                    ]
+                  },
+                  {
+                    "title": "IntegerPrior",
+                    "type": "object",
+                    "properties": {
+                      "lower": {
+                        "type": "integer",
+                        "example": 0
+                      },
+                      "upper": {
+                        "type": "integer",
+                        "example": 5
+                      },
+                      "mode": {
+                        "type": "number",
+                        "example": 2.5
+                      },
+                      "uncert": {
+                        "type": "number",
+                        "example": 2.0,
+                        "exclusiveMinimum": 0
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "integer_prior"
+                        ],
+                        "default": "integer_prior"
+                      }
+                    },
+                    "required": [
+                      "lower",
+                      "upper",
+                      "mode",
+                      "uncert"
+                    ]
+                  },
+                  {
+                    "title": "CategoricalPrior",
+                    "type": "object",
+                    "properties": {
+                      "probs": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "example": [
+                          0.1,
+                          0.3,
+                          0.6
+                        ],
+                        "minItems": 1
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "categorical_prior"
+                        ],
+                        "default": "categorical_prior"
+                      }
+                    },
+                    "required": [
+                      "probs"
+                    ]
+                  }
+                ],
+                "example": {
+                  "type": "continuous_prior",
+                  "lower": 0.1,
+                  "upper": 5.5,
+                  "mode": 2.5,
+                  "uncert": 2.0
+                }
+              }
+            },
+            "required": [
+              "name",
+              "prior"
+            ]
+          },
+          "minItems": 1,
+          "example": [
+            {
+              "name": "price",
+              "prior": {
+                "type": "continuous_prior",
+                "lower": 0.1,
+                "upper": 5.5,
+                "mode": 2.5,
+                "uncert": 2.0
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "parameters"
+      ],
+      "example": {
+        "parameters": [
+          {
+            "name": "price",
+            "prior": {
+              "type": "continuous_prior",
+              "lower": 0.1,
+              "upper": 5.5,
+              "mode": 2.5,
+              "uncert": 2.0
+            }
+          }
+        ]
+      }
+    },
+    "experiment_id": {
+      "type": "string"
+    },
+    "trials": {
+      "type": "object",
+      "additionalProperties": {
+        "title": "Trial",
+        "type": "object",
+        "properties": {
+          "param_values": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "title": "FloatValue",
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "float"
+                      ],
+                      "default": "float"
+                    }
+                  },
+                  "required": [
+                    "value"
+                  ]
+                },
+                {
+                  "title": "IntValue",
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "integer"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "int"
+                      ],
+                      "default": "int"
+                    }
+                  },
+                  "required": [
+                    "value"
+                  ]
+                }
+              ]
+            },
+            "example": {
+              "price": {
+                "type": "float",
+                "value": 1.0
+              }
+            }
+          },
+          "U_value": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "example": [
+              0.2
+            ]
+          },
+          "trial_id": {
+            "type": "string"
+          },
+          "create_dt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "trial_updates": {
+            "type": "object",
+            "additionalProperties": {
+              "title": "TrialUpdate",
+              "type": "object",
+              "properties": {
+                "ref_id": {
+                  "type": "string",
+                  "example": "measurement-1"
+                },
+                "objective_measurement": {
+                  "type": "number",
+                  "example": 1.0
+                },
+                "measurement_dt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "ref_id",
+                "objective_measurement"
+              ]
+            }
+          }
+        },
+        "required": [
+          "param_values",
+          "U_value"
+        ]
+      }
+    }
+  },
+  "required": [
+    "parameter_space"
+  ]
+}

@@ -1,0 +1,37 @@
+name: Demos
+
+on:
+  push:
+    branches: ["develop"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demos:
+    runs-on: ubuntu-latest
+    env:
+      MPLBACKEND: Agg
+      JAX_PLATFORMS: cpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install base package
+        run: python -m pip install .
+      - name: Run demos in directory order
+        shell: bash
+        run: |
+          set -euo pipefail
+          demo_count=0
+          while IFS= read -r demo; do
+            demo_count=$((demo_count + 1))
+            module="${demo%.py}"
+            module="${module//\//.}"
+            python -m "$module"
+          done < <(find cicd/demos -type f -name '*.py' | LC_ALL=C sort)
+          test "$demo_count" -gt 0

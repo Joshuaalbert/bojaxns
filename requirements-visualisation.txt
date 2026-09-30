@@ -1,1 +1,2 @@
-pygraphviz>=1.7
+# Graphviz development libraries are also needed to build pygraphviz.
+.[visualisation]
