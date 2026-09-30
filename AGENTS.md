@@ -30,8 +30,9 @@ do not add abstractions solely to reduce line count.
 Keep public `bojaxns` imports working. Existing package re-exports are an API:
 do not empty `__init__.py` merely because another repository does so.
 Production owns numerical behaviour; CI, demos and benchmarks must call it,
-not contain a second optimiser. Dataclasses own validated experiment and
-parameter schemas and explicit JSON serialization; NamedTuples own existing JAX array containers.
+not contain a second optimiser. Registered JAXNS PureDataclassPytree dataclasses
+own experiment and parameter state with explicit host validation and native
+to_json/from_json; NamedTuples own existing JAX array containers.
 
 Use absolute imports, explicit types, four spaces, descriptive names and
 Google-style API docstrings. Add adjacent symbolic shape comments to array

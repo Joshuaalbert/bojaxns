@@ -22,6 +22,7 @@ class BayesianOptimiser:
                  S: int = 512, *, max_samples: int = 100000,
                  root_allocation_degree: int | None = None,
                  depth_condition: DepthCondition | None = None):
+        experiment.validate()
         if not 0. <= beta <= 1.:
             raise ValueError("beta must be between zero and one.")
         if S < 1 or int(S) != S:

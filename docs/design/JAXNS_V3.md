@@ -6,26 +6,30 @@ The structural migration alone did not establish numerical compatibility.
 
 ## Schemas and persistence
 
-Experiment schemas are host-side dataclasses with explicit validation. The
-existing `.dict()`, `.json()`, `.parse_raw()`, `.schema()` and `.schema_json()`
-entry points remain. JSON describes named fields, scalar type tags, parameter
-prior tags, and ISO datetimes; it contains no executable/pickled tree metadata.
-JSON Schema is emitted inline rather than using Pydantic's definitions layout.
-Python JSON's existing Infinity/NaN representation remains for uniform-prior
-uncertainty and failed measurements. Strict external JSON transports should
-handle that existing convention explicitly.
+Experiment and parameter records are registered, slotted dataclasses inheriting
+JAXNS `PureDataclassPytree`. Numeric values are children; names, type tags,
+identifiers and datetimes are static auxiliary metadata. Mutable trial dictionaries
+remain host orchestration state. Existing scientific NamedTuples retain their
+array semantics.
 
-Constructors validate inputs, and `OptimisationExperiment.validate()` rechecks
-mutable experiment data before trial creation. Numeric scalar schemas require
-numbers of the declared kind, rather than Pydantic's incidental string/bool
-coercions. Invalid domains, duplicate names, incorrect U lengths, and impossible
-category inversions raise before sampling. Nonfinite objective measurements
-remain supported: the optimiser retains its existing failed-measurement penalty.
+Persistence uses the inherited `to_json()` and `from_json()` methods directly.
+`to_json()` returns a dictionary: use `json.dump(record.to_json(), file)` and
+`Record.from_json(json.load(file))` for files. JAXNS preserves array dtype and
+bytes (including infinities/NaNs), and restores leaves as host NumPy arrays.
+Its tree definition contains pickled metadata: load only trusted snapshots in
+a compatible Python environment. This replaces the old named-field JSON format;
+there is no `parse_raw`, JSON Schema generator, or compatibility codec.
 
-Host histories include strings, datetimes and mutable trial dictionaries. They
-are not device pytrees. Existing scientific NamedTuples already are registered
-by JAX and retain their array semantics; JAXNS owns its model/state pytrees.
-There is no parallel sampler, Pydantic replacement framework, or checkpoint codec.
+Construction and pytree reconstruction are data-only, so JAX can rebuild records
+with tracers and batched leaves. Call `.validate()` for standalone host records.
+The service validates requests, experiments and measurements before use; parameter
+model construction and inversion validate their inputs. Validation normalises
+host scalar arrays and nested dictionaries and rechecks mutable state. It is not
+part of JAX unflatten, device execution, or snapshot decoding. Invalid domains,
+duplicate names, incorrect U lengths and impossible category inversions fail at
+these host boundaries. Numeric scalars require the declared kind rather than
+string/bool coercion. Nonfinite objective measurements retain the existing
+failed-measurement penalty contract.
 
 ## Coordinate order and precision
 

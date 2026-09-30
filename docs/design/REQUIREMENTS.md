@@ -7,15 +7,15 @@
 - `pyproject.toml` owns metadata, runtime dependencies and tests/docs/visualisation
   extras. Requirement files are compatibility entry points only.
 - Preserve version 1.1.1 and the existing public import surface during this
-  migration. Python >=3.10 follows JAXNS 3.0.0 metadata; the requested
+  migration, except the explicitly replaced Pydantic serialization APIs. Python >=3.10 follows JAXNS 3.0.0 metadata; the requested
   local environment is Python 3.14. Compatibility is verified, not inferred
   from that declaration.
 - The project uses Apache-2.0, as explicitly authorized for this migration.
   LICENSE and package metadata must agree in built distributions.
-- Dataclasses own validated user-facing experiment/parameter schemas and
-  explicit JSON serialization, including the existing round-trip entry points.
-  Existing scientific array containers are NamedTuples; array fields carry
-  adjacent symbolic shape comments. Reuse JAXNS pytree interfaces only where numerical state requires them.
+- Registered `PureDataclassPytree` dataclasses own experiment/parameter state.
+  JAXNS owns `to_json()` / `from_json()` persistence; host boundaries own explicit
+  validation. Existing scientific array containers are NamedTuples; array fields
+  carry adjacent symbolic shape comments.
   The [v3 migration contract](JAXNS_V3.md) records persistence, precision and
   scientific boundary choices.
 

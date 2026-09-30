@@ -37,6 +37,7 @@ class BayesianOptimisation:
 
     @classmethod
     def create_new_experiment(cls, new_experiment: NewExperimentRequest) -> 'BayesianOptimisation':
+        new_experiment.validate()
         experiment = OptimisationExperiment(parameter_space=new_experiment.parameter_space)
         prior_model = build_parameter_model(experiment.parameter_space)
         U_dims = prior_model.U_ndims

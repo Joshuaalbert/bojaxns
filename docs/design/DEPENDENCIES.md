@@ -9,7 +9,7 @@ CI targets Python 3.10–3.14 without recreating that environment.
 | Dependency | Consumer |
 | --- | --- |
 | JAX / JAXLIB / Chex | Compiled numerical work, arrays and PRNGs |
-| JAXNS 3.0.0 | Prior transforms, nested sampling and posterior resampling |
+| JAXNS 3.0.0 | Pytrees/persistence, prior transforms, nested sampling and posterior resampling |
 | tfp-nightly 0.26.0.dev20260930 | JAX distributions and GP kernels |
 | NumPy / SciPy | Host arrays and sampling utilities |
 | mctx | Multi-step search |
@@ -21,7 +21,8 @@ The tested TFP nightly is pinned for reproducibility and imports under
 `tensorflow-probability` distribution: both provide the same import package.
 A source import audit found no etils consumers, so it is no longer a direct
 dependency. JAXNS may still require it transitively.
-Pydantic is replaced by validated dataclasses with explicit JSON serialization.
+Pydantic is replaced by JAXNS `PureDataclassPytree` dataclasses with explicit
+host validation and inherited `to_json()` / `from_json()` persistence.
 pyDOE2 is replaced by SciPy qmc; Latin hypercube construction belongs to
 production sampling utilities, not CI or demos. Preserve deterministic seeding and stratum coverage.
 

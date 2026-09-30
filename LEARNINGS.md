@@ -20,5 +20,9 @@ scientific assumptions as Bojaxns requirements.
 - Existing package re-exports are used by tests and users. Preserve them.
 - Infinite observation variance represents masking in the GP formulation;
   numerical tests compare masked and unmasked paths and verify finite outputs.
-- The legacy experiment test writes a schema artifact; keep it in `tmp_path`
-  so validation never modifies a checkout or a tracked reference schema.
+- Experiment persistence uses JAXNS `to_json()` / `from_json()` directly, not
+  Pydantic-compatible JSON methods. Snapshot metadata is pickled; load trusted
+  snapshots only. JSON file tests write to `tmp_path`.
+- Pytree reconstruction must accept tracers and batched leaves. Validate scalar
+  experiment contracts explicitly at host service/model boundaries, not in
+  dataclass constructors or unflatten.

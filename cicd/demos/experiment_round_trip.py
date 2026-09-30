@@ -20,8 +20,9 @@ def main() -> None:
             TrialUpdate(ref_id=f"demo-{seed}", objective_measurement=-(x * x)),
         )
         assert service.trial_size(trial_id) == 1
-    restored = OptimisationExperiment.parse_raw(service.experiment.json())
+    restored = OptimisationExperiment.from_json(service.experiment.to_json())
     assert restored == service.experiment
+    BayesianOptimisation(restored)  # Revalidate persisted host state before use.
     print(f"Round-tripped {len(restored.trials)} measured trials.")
 
 

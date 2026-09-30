@@ -1,5 +1,6 @@
 """Parameter schemas and their released JAXNS 3 prior realisation."""
-from dataclasses import dataclass, field
+from copy import deepcopy
+from dataclasses import dataclass
 from functools import partial
 from math import isfinite, isinf
 from typing import Callable, List, Literal, Union
@@ -15,9 +16,9 @@ from jaxctx.priors.special_priors import Categorical
 from jaxns.model import Model
 from jaxns.mixed_precision import mp_policy
 from jaxns.priors import Prior
+from jaxns.pytree import PureDataclassPytree
 
-from bojaxns.basic import SerialisableBaseModel
-from bojaxns.common import FloatValue, IntValue, ParamValues, UValue, finite_float, integer
+from bojaxns.common import FloatValue, IntValue, ParamValues, UValue, finite_float, integer, real_scalar
 
 __all__ = ['ContinuousPrior', 'IntegerPrior', 'CategoricalPrior', 'Parameter',
            'ParameterSpace', 'build_prior_model', 'build_parameter_model', 'ParameterModel']
@@ -29,50 +30,59 @@ def _validate_interval(prior, tag: str) -> None:
     if prior.type != tag:
         raise ValueError(f'Expected type {tag}.')
     prior.mode = finite_float(prior.mode, 'mode')
-    if isinstance(prior.uncert, bool):
-        raise ValueError('uncert must be positive.')
-    prior.uncert = float(prior.uncert)
+    prior.uncert = real_scalar(prior.uncert, 'uncert')
     if not prior.uncert > 0:
         raise ValueError('uncert must be positive (positive infinity means uniform).')
     if prior.lower > prior.upper or (tag == 'continuous_prior' and prior.lower == prior.upper):
         raise ValueError('Prior bounds must be ordered and continuous intervals must have positive width.')
 
 
-@dataclass
-class ContinuousPrior(SerialisableBaseModel):
-    lower: float = field(metadata={'example': 0.1})
-    upper: float = field(metadata={'example': 5.5})
-    mode: float = field(metadata={'example': 2.5})
-    uncert: float = field(metadata={'example': 2., 'exclusiveMinimum': 0})
+@dataclass(slots=True)
+class ContinuousPrior(PureDataclassPytree):
+    lower: float  # [] lower bound.
+    upper: float  # [] upper bound.
+    mode: float  # [] normal location.
+    uncert: float  # [] scale; positive infinity selects a uniform prior.
     type: Literal['continuous_prior'] = 'continuous_prior'
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['type'])
+
+    def validate(self) -> None:
         self.lower = finite_float(self.lower, 'lower')
         self.upper = finite_float(self.upper, 'upper')
         _validate_interval(self, 'continuous_prior')
 
 
-@dataclass
-class IntegerPrior(SerialisableBaseModel):
-    lower: int = field(metadata={'example': 0})
-    upper: int = field(metadata={'example': 5})
-    mode: float = field(metadata={'example': 2.5})
-    uncert: float = field(metadata={'example': 2., 'exclusiveMinimum': 0})
+@dataclass(slots=True)
+class IntegerPrior(PureDataclassPytree):
+    lower: int  # [] inclusive lower bound.
+    upper: int  # [] inclusive upper bound.
+    mode: float  # [] normal location.
+    uncert: float  # [] scale; positive infinity selects a uniform prior.
     type: Literal['integer_prior'] = 'integer_prior'
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['type'])
+
+    def validate(self) -> None:
         self.lower = integer(self.lower, 'lower')
         self.upper = integer(self.upper, 'upper')
         _validate_interval(self, 'integer_prior')
 
 
-@dataclass
-class CategoricalPrior(SerialisableBaseModel):
-    probs: List[float] = field(metadata={'example': [0.1, 0.3, 0.6], 'minItems': 1,
-                                       'items': {'type': 'number', 'minimum': 0}})
+@dataclass(slots=True)
+class CategoricalPrior(PureDataclassPytree):
+    probs: List[float]  # [K] unnormalised category weights.
     type: Literal['categorical_prior'] = 'categorical_prior'
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['type'])
+
+    def validate(self) -> None:
         if self.type != 'categorical_prior':
             raise ValueError('Expected type categorical_prior.')
         self.probs = [finite_float(p, 'probability') for p in self.probs]
@@ -83,13 +93,16 @@ class CategoricalPrior(SerialisableBaseModel):
 ParamPrior = Union[ContinuousPrior, IntegerPrior, CategoricalPrior]
 
 
-@dataclass
-class Parameter(SerialisableBaseModel):
-    name: str = field(metadata={'example': 'price'})
-    prior: ParamPrior = field(metadata={'example': {'type': 'continuous_prior', 'lower': 0.1,
-                                                  'upper': 5.5, 'mode': 2.5, 'uncert': 2.}})
+@dataclass(slots=True)
+class Parameter(PureDataclassPytree):
+    name: str
+    prior: ParamPrior
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['name'])
+
+    def validate(self) -> None:
         if not isinstance(self.name, str) or not self.name:
             raise ValueError('Parameter name must be a nonempty string.')
         if isinstance(self.prior, dict):
@@ -100,21 +113,29 @@ class Parameter(SerialisableBaseModel):
             self.prior = cls(**self.prior)
         if not isinstance(self.prior, (ContinuousPrior, IntegerPrior, CategoricalPrior)):
             raise ValueError('Unsupported parameter prior.')
+        self.prior.validate()
 
 
-@dataclass
-class ParameterSpace(SerialisableBaseModel):
-    parameters: List[Parameter] = field(metadata={'minItems': 1, 'example': [
-        {'name': 'price', 'prior': {'type': 'continuous_prior', 'lower': 0.1,
-                                  'upper': 5.5, 'mode': 2.5, 'uncert': 2.}}]})
+@dataclass(slots=True)
+class ParameterSpace(PureDataclassPytree):
+    parameters: List[Parameter]
 
-    def __post_init__(self):
+    def validate(self) -> None:
         self.parameters = [Parameter(**p) if isinstance(p, dict) else p for p in self.parameters]
         if not self.parameters or not all(isinstance(p, Parameter) for p in self.parameters):
             raise ValueError('Parameter space must contain parameters.')
+        for parameter in self.parameters:
+            parameter.validate()
         names = [p.name for p in self.parameters]
         if len(names) != len(set(names)):
             raise ValueError(f'parameter names must be unique. Got {names}.')
+
+
+ContinuousPrior.register_pytree()
+IntegerPrior.register_pytree()
+CategoricalPrior.register_pytree()
+Parameter.register_pytree()
+ParameterSpace.register_pytree()
 
 
 def _continuous_distribution(prior: ContinuousPrior):
@@ -152,7 +173,8 @@ def translate_parameter(param: Parameter) -> jax.Array:
 def build_prior_model(parameter_space: ParameterSpace) -> Callable:
     """Build a JAXNS 3 callable whose named priors have zero log likelihood."""
     # Snapshot host schemas so subsequent editing cannot invalidate JIT constants.
-    parameters = ParameterSpace.parse_raw(parameter_space.json()).parameters
+    parameter_space.validate()
+    parameters = deepcopy(parameter_space.parameters)
 
     def prior_model():
         for parameter in parameters:
@@ -194,8 +216,10 @@ class ParameterModel:
         return applied.collections['X'].to_dict()
 
 
+
 def build_parameter_model(parameter_space: ParameterSpace) -> ParameterModel:
     """Construct the model and stable flat-U adapter once at the host boundary."""
+    parameter_space.validate()
     shapes = tuple((len(p.prior.probs),) if isinstance(p.prior, CategoricalPrior) else ()
                    for p in parameter_space.parameters)
     dimension = sum(int(np.prod(shape)) for shape in shapes)
@@ -248,6 +272,10 @@ def sample_U_categorical(key, logits, target_cat,
 
 
 def inverse_transform_param(key, param: Parameter, param_value: Union[FloatValue, IntValue]) -> List[float]:
+    param.validate()
+    if not isinstance(param_value, (FloatValue, IntValue)):
+        raise ValueError('Expected FloatValue or IntValue.')
+    param_value.validate()
     prior = param.prior
     value = param_value.value
     if isinstance(prior, ContinuousPrior):
@@ -265,6 +293,7 @@ def inverse_transform_param(key, param: Parameter, param_value: Union[FloatValue
 
 def sample_U_value(key, param_space: ParameterSpace, param_values: ParamValues) -> UValue:
     """Invert validated physical values in the same order as ParameterModel."""
+    param_space.validate()
     if set(param_values) != {p.name for p in param_space.parameters}:
         raise ValueError('Parameter values must match parameter space names.')
     result = []

@@ -1,44 +1,75 @@
-"""Validated scalar values at the experiment's host-side boundary."""
+"""Scalar pytrees with explicit host-side validation."""
 from dataclasses import dataclass
 from math import isfinite
 from numbers import Integral, Real
 from typing import Dict, List, Literal, Union
 
-from bojaxns.basic import SerialisableBaseModel
+import numpy as np
+from jaxns.pytree import PureDataclassPytree
 
 
-def finite_float(value: Real, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, Real) or not isfinite(value):
-        raise ValueError(f'{name} must be a finite number.')
+def real_scalar(value: Real, name: str) -> float:
+    """Read a host scalar, including native JSON's zero-dimensional arrays."""
+    value = np.asarray(value)
+    if value.shape != ():
+        raise ValueError(f'{name} must be a scalar number.')
+    value = value.item()
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f'{name} must be numeric.')
     return float(value)
 
 
+def finite_float(value: Real, name: str) -> float:
+    value = real_scalar(value, name)
+    if not isfinite(value):
+        raise ValueError(f'{name} must be a finite number.')
+    return value
+
+
 def integer(value: Integral, name: str) -> int:
+    value = np.asarray(value)
+    if value.shape != ():
+        raise ValueError(f'{name} must be a scalar integer.')
+    value = value.item()
     if isinstance(value, bool) or not isinstance(value, Integral):
         raise ValueError(f'{name} must be an integer.')
     return int(value)
 
 
-@dataclass
-class FloatValue(SerialisableBaseModel):
-    value: float
+@dataclass(slots=True)
+class FloatValue(PureDataclassPytree):
+    value: float  # [] scalar numeric leaf; tree transforms may add batch axes.
     type: Literal['float'] = 'float'
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['type'])
+
+    def validate(self) -> None:
         if self.type != 'float':
             raise ValueError('FloatValue type must be float.')
         self.value = finite_float(self.value, 'value')
 
 
-@dataclass
-class IntValue(SerialisableBaseModel):
-    value: int
+FloatValue.register_pytree()
+
+
+@dataclass(slots=True)
+class IntValue(PureDataclassPytree):
+    value: int  # [] scalar numeric leaf; tree transforms may add batch axes.
     type: Literal['int'] = 'int'
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['type'])
+
+    def validate(self) -> None:
         if self.type != 'int':
             raise ValueError('IntValue type must be int.')
         self.value = integer(self.value, 'value')
+
+
+IntValue.register_pytree()
 
 
 def parse_param_value(value):

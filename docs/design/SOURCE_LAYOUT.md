@@ -7,7 +7,7 @@
 | `src/bojaxns/service.py` | Public experiment/trial orchestration |
 | `src/bojaxns/base.py` | Predictive/acquisition interfaces and marginalisation |
 | `src/bojaxns/gaussian_process_formulation/` | GP likelihood/prediction, optimiser and lookahead |
-| `src/bojaxns/utils.py`, `basic.py` | Existing schema/time/sampling utilities |
+| `src/bojaxns/utils.py` | Host time/sampling utilities |
 | `cicd/` | Verification and examples, never installed as production |
 | `docs/` | Existing user/API docs plus design and system specifications |
 

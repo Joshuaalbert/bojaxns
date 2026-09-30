@@ -18,7 +18,7 @@
   ],
   "Experiment JSON round trips preserve trials and measurements, and trial parameter names must match the experiment parameter space.": [
     "test_optimisation_experiment",
-    "test_nested_json_constructor_schema_and_roundtrip",
+    "test_native_pytree_json_roundtrip_and_explicit_validation",
     "test_schema_validation_rechecks_mutable_experiment"
   ],
   "For finite observation variances, masked and unmasked GP calculations agree numerically.": [

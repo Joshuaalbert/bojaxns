@@ -65,6 +65,21 @@
       "path": "cicd/tests/gaussian_process_formulation/test_migration_numerics.py",
       "reason": "numerical_equivalence",
       "note": "Compiler-memory improvement for diagonal prediction agrees with full covariance under JIT, with and without masked observations."
+    },
+    "test_numeric_leaves_survive_jit_tree_map_and_vmap": {
+      "path": "cicd/tests/test_schema_migration.py",
+      "reason": "migration_regression",
+      "note": "JAX reconstruction accepts traced and batched numeric children and preserves static metadata."
+    },
+    "test_host_validation_accepts_native_scalars_and_rejects_nonscalars": {
+      "path": "cicd/tests/test_schema_migration.py",
+      "reason": "migration_regression",
+      "note": "Native restored scalar arrays validate at host model boundaries; malformed or batched values fail scalar contracts."
+    },
+    "test_service_validates_pytree_snapshots_and_mutable_inputs": {
+      "path": "cicd/tests/test_service_migration.py",
+      "reason": "migration_regression",
+      "note": "Resumed native snapshots support trial and measurement operations; invalid requests and mutable inputs fail at service boundaries."
     }
   }
 }

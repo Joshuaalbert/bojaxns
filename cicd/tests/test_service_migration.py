@@ -84,3 +84,36 @@ def test_failed_measurement_penalties_use_same_warmup_and_fit_data(monkeypatch):
     proposal = service.create_new_trial(jax.random.PRNGKey(0))
     assert proposal not in (first, second)
     assert 0. <= service.get_trial(proposal).param_values['x'].value <= 1.
+
+
+def test_service_validates_pytree_snapshots_and_mutable_inputs():
+    import json
+
+    from bojaxns.common import FloatValue
+    from bojaxns.experiment import OptimisationExperiment
+
+    request = NewExperimentRequest(
+        ParameterSpace([Parameter('x', ContinuousPrior(0., 1., .5, np.inf))]), 0)
+    with pytest.raises(ValueError, match='positive'):
+        BayesianOptimisation.create_new_experiment(request)
+    request.init_explore_size = 1
+    service = BayesianOptimisation.create_new_experiment(request)
+    trial_id = service.create_new_trial(jax.random.PRNGKey(1))
+    with pytest.raises(ValueError, match='numeric'):
+        service.post_measurement(trial_id, TrialUpdate('taster', True))
+    assert service.trial_size(trial_id) == 0
+    service.post_measurement(trial_id, TrialUpdate('taster', 7.))
+    snapshot = json.loads(json.dumps(service.experiment.to_json(), allow_nan=False))
+    restored = OptimisationExperiment.from_json(snapshot)
+    assert isinstance(restored.trials[trial_id].U_value[0], np.ndarray)
+    resumed = BayesianOptimisation(restored)
+    resumed.post_measurement(trial_id, TrialUpdate('second-taster', 8.))
+    assert resumed.trial_size(trial_id) == 2
+    next_id = resumed.create_new_trial(jax.random.PRNGKey(2), random_explore=True)
+    assert next_id != trial_id
+    with pytest.raises(ValueError, match='finite'):
+        resumed.add_trial_from_data(jax.random.PRNGKey(3), {'x': FloatValue(np.nan)})
+    assert len(resumed.experiment.trials) == 2
+    restored.trials[trial_id].U_value = [2.]
+    with pytest.raises(ValueError, match='coordinates'):
+        BayesianOptimisation(restored)

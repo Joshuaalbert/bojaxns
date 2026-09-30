@@ -1,3 +1,5 @@
+import json
+
 from jax import numpy as jnp
 
 from bojaxns.common import FloatValue, IntValue
@@ -44,13 +46,15 @@ def test_optimisation_experiment(tmp_path):
                                 }, U_value=[0.5, 0.5, 0.5, 0.5, 0.5])
     trials = {trial.trial_id: trial}
     s = OptimisationExperiment(parameter_space=parameter_space, trials=trials)
-    assert s == OptimisationExperiment.parse_raw(s.json())
+    s.validate()
+    assert s == OptimisationExperiment.from_json(json.loads(json.dumps(s.to_json(), allow_nan=False)))
 
     trial.trial_updates['1234'] = TrialUpdate(ref_id='1234',
                                               measurement_dt=current_utc(),
                                               objective_measurement=1.)
 
-    assert s == OptimisationExperiment.parse_raw(s.json())
+    s.validate()
+    assert s == OptimisationExperiment.from_json(json.loads(json.dumps(s.to_json(), allow_nan=False)))
 
     # Validation errors
 
@@ -59,10 +63,11 @@ def test_optimisation_experiment(tmp_path):
                                     'integers': IntValue(value=1)
                                     }, U_value=[0.5, 0.5])
         trials = {trial.trial_id: trial}
-        _ = OptimisationExperiment(parameter_space=parameter_space, trials=trials)
+        OptimisationExperiment(parameter_space=parameter_space, trials=trials).validate()
         assert False
     except ValueError as e:
         assert "don't match param space" in str(e)
 
-    with (tmp_path / 'optimisation_experiment_schema.json').open('w') as f:
-        f.write(OptimisationExperiment.schema_json(indent=2))
+    path = tmp_path / 'experiment.json'
+    path.write_text(json.dumps(s.to_json(), allow_nan=False))
+    assert s == OptimisationExperiment.from_json(json.loads(path.read_text()))

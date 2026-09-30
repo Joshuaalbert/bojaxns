@@ -5,9 +5,7 @@ from typing import Union
 import numpy as np
 from scipy.stats import qmc
 
-from bojaxns.basic import build_example, example_from_schema as example_from_schema
-
-__all__ = ['latin_hypercube', 'build_example', 'current_utc']
+__all__ = ['latin_hypercube', 'current_utc']
 
 
 def latin_hypercube(seed: int, num_samples: int, num_dim: int) -> np.ndarray:

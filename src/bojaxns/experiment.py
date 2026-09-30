@@ -1,12 +1,12 @@
 """Explicit host-side schemas for persisted experiment state."""
 from dataclasses import dataclass, field
 from datetime import datetime
-from numbers import Real
 from typing import Dict
 from uuid import uuid4
 
-from bojaxns.basic import SerialisableBaseModel
-from bojaxns.common import FloatValue, IntValue, ParamValues, UValue, finite_float, integer, parse_param_value
+from jaxns.pytree import PureDataclassPytree
+
+from bojaxns.common import FloatValue, IntValue, ParamValues, UValue, finite_float, integer, parse_param_value, real_scalar
 from bojaxns.parameter_space import CategoricalPrior, ContinuousPrior, ParameterSpace
 from bojaxns.utils import current_utc
 
@@ -26,34 +26,34 @@ def _identifier(value: str, name: str) -> None:
         raise ValueError(f'{name} must be a nonempty string.')
 
 
-@dataclass
-class TrialUpdate(SerialisableBaseModel):
-    ref_id: str = field(metadata={'example': 'measurement-1'})
-    objective_measurement: float = field(metadata={'example': 1.})
+@dataclass(slots=True)
+class TrialUpdate(PureDataclassPytree):
+    ref_id: str
+    objective_measurement: float  # [] objective observation.
     measurement_dt: datetime = field(default_factory=current_utc)
 
-    def __post_init__(self):
-        self.validate()
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['ref_id', 'measurement_dt'])
 
     def validate(self) -> None:
         _identifier(self.ref_id, 'ref_id')
         self.measurement_dt = _datetime(self.measurement_dt)
-        if isinstance(self.objective_measurement, bool) or not isinstance(self.objective_measurement, Real):
-            raise ValueError('objective_measurement must be numeric.')
         # The optimiser owns the established penalty for nonfinite objectives.
-        self.objective_measurement = float(self.objective_measurement)
+        self.objective_measurement = real_scalar(self.objective_measurement, 'objective_measurement')
 
 
-@dataclass
-class Trial(SerialisableBaseModel):
-    param_values: ParamValues = field(metadata={'example': {'price': {'type': 'float', 'value': 1.}}})
-    U_value: UValue = field(metadata={'example': [0.2], 'items': {'type': 'number', 'minimum': 0, 'maximum': 1}})
+@dataclass(slots=True)
+class Trial(PureDataclassPytree):
+    param_values: ParamValues
+    U_value: UValue  # [D] flat unit coordinates in declaration order.
     trial_id: str = field(default_factory=lambda: str(uuid4()))
     create_dt: datetime = field(default_factory=current_utc)
     trial_updates: Dict[str, TrialUpdate] = field(default_factory=dict)
 
-    def __post_init__(self):
-        self.validate()
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['trial_id', 'create_dt'])
 
     def validate(self) -> None:
         _identifier(self.trial_id, 'trial_id')
@@ -61,7 +61,7 @@ class Trial(SerialisableBaseModel):
         self.param_values = {name: parse_param_value(value) for name, value in self.param_values.items()}
         for name, value in self.param_values.items():
             _identifier(name, 'parameter name')
-            value.__post_init__()
+            value.validate()
         self.U_value = [finite_float(u, 'U coordinate') for u in self.U_value]
         if any(not 0 <= u <= 1 for u in self.U_value):
             raise ValueError('U coordinates must lie in [0, 1].')
@@ -74,31 +74,26 @@ class Trial(SerialisableBaseModel):
             update.validate()
 
 
-@dataclass
-class OptimisationExperiment(SerialisableBaseModel):
-    parameter_space: ParameterSpace = field(metadata={'example': {'parameters': [
-        {'name': 'price', 'prior': {'type': 'continuous_prior', 'lower': 0.1,
-                                  'upper': 5.5, 'mode': 2.5, 'uncert': 2.}}]}})
+@dataclass(slots=True)
+class OptimisationExperiment(PureDataclassPytree):
+    parameter_space: ParameterSpace
     experiment_id: str = field(default_factory=lambda: str(uuid4()))
     trials: Dict[str, Trial] = field(default_factory=dict)
 
-    def __post_init__(self):
+    @classmethod
+    def flatten(cls, this):
+        return cls.build_flatten(this, ['experiment_id'])
+
+    def validate(self) -> None:
         if isinstance(self.parameter_space, dict):
             self.parameter_space = ParameterSpace(**self.parameter_space)
         self.trials = {key: Trial(**value) if isinstance(value, dict) else value
                        for key, value in self.trials.items()}
-        self.validate()
-
-    def validate(self) -> None:
-        """Recheck mutable state at a service boundary, without device work."""
         _identifier(self.experiment_id, 'experiment_id')
         if not isinstance(self.parameter_space, ParameterSpace):
             raise ValueError('Expected ParameterSpace.')
-        self.parameter_space.__post_init__()
+        self.parameter_space.validate()
         parameters = self.parameter_space.parameters
-        for parameter in parameters:
-            parameter.__post_init__()
-            parameter.prior.__post_init__()
         names = {p.name for p in parameters}
         dimension = sum(len(p.prior.probs) if isinstance(p.prior, CategoricalPrior) else 1 for p in parameters)
         for key, trial in self.trials.items():
@@ -123,18 +118,23 @@ class OptimisationExperiment(SerialisableBaseModel):
                     raise ValueError(f'Trial value for {parameter.name} is outside its prior domain or has the wrong type.')
 
 
-@dataclass
-class NewExperimentRequest(SerialisableBaseModel):
-    parameter_space: ParameterSpace = field(metadata={'example': {'parameters': [
-        {'name': 'price', 'prior': {'type': 'continuous_prior', 'lower': 0.1,
-                                  'upper': 5.5, 'mode': 2.5, 'uncert': 2.}}]}})
-    init_explore_size: int = field(metadata={'minimum': 1, 'example': 10})
+@dataclass(slots=True)
+class NewExperimentRequest(PureDataclassPytree):
+    parameter_space: ParameterSpace
+    init_explore_size: int  # [] initial design size.
 
-    def __post_init__(self):
+    def validate(self) -> None:
         if isinstance(self.parameter_space, dict):
             self.parameter_space = ParameterSpace(**self.parameter_space)
         if not isinstance(self.parameter_space, ParameterSpace):
             raise ValueError('Expected ParameterSpace.')
+        self.parameter_space.validate()
         self.init_explore_size = integer(self.init_explore_size, 'init_explore_size')
         if self.init_explore_size < 1:
             raise ValueError('init_explore_size must be positive.')
+
+
+TrialUpdate.register_pytree()
+Trial.register_pytree()
+OptimisationExperiment.register_pytree()
+NewExperimentRequest.register_pytree()

@@ -98,3 +98,41 @@ calculations were checked against dense conditioning and full covariance.
 There is no claim of identical random trajectories or a statistical old-v2 versus
 new-v3 convergence comparison. The documented noise-model and mean-fantasy
 questions remain outside this migration's scientific changes.
+
+## Native pytree persistence follow-up
+
+The requested API correction removes `SerialisableBaseModel`, its codec/schema
+helpers and the generated schema fixture. Experiment/parameter records directly
+inherit registered, slotted JAXNS `PureDataclassPytree`; callers use inherited
+`to_json()` / `from_json()`. Numeric values are children and identity/date/type
+metadata are auxiliary data. No replacement serialization framework was added.
+
+Validation now runs explicitly at host service, optimiser and parameter-model
+boundaries. Constructors and inherited unflatten accept tracers and batched
+leaves without scalar conversion or device synchronization. Native JSON restores
+NumPy leaves; host validation normalises scalar arrays before orchestration.
+The existing flat parameter adapter remains a plain dataclass with its existing
+closure ownership; it did not need a new pytree interface.
+
+The JIT/tree-map/vmap regression fails against the previous `b0ddd8f` wheel
+because its records are opaque object leaves. It passes after migration across
+all eleven record classes, including native batched JSON restoration and static
+datetime preservation. Mutable-input/service checks cover resumed snapshots,
+invalid requests, invalid observations and invalid externally supplied values.
+
+Validation: 49 unit/system tests and 5 reviewer checks passed on Python 3.11.16;
+ledger, Ruff, fatal Flake8, build and Twine checks passed. An independently
+installed wheel completed the native snapshot/measurement workflow outside the
+checkout. The README cookie example completed six recipes with five simulated
+tasters per recipe and saved/resumed its state, using real posterior inference
+with bounded test budgets (`num_search=128`, `batch_size=8`, `S=8`,
+`root_allocation_degree=16`, `max_samples=4096`). This verifies API composition,
+not cookie quality, default-budget runtime or optimisation convergence.
+
+The follow-up changes host records/persistence, not GP kernels or acquisition
+arithmetic. The earlier numerical benchmark results above were not rerun and
+are not measurements of serialization performance.
+
+Independent follow-up review reported no outstanding confirmed P1/P2 findings.
+It ran 20 focused tests and the unmodified README example with flat simulated
+scores through exploration and native snapshot save/resume.
